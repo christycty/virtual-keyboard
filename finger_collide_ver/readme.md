@@ -1,0 +1,2 @@
+This version follows the control of most similar projects found, which is to type a key by touching the tips of thumb and index finger.
+It is a compromised version for mediapipe cannot detect fingertip depths well enough for normal typing actions (moving the fingers closer to/further from screen)
