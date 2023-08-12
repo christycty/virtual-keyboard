@@ -15,7 +15,6 @@ WHITE = (255, 255, 255)
 
 class Hands:
     def __init__(self):
-        self.KEYDOWN_DISTANCE_THRESHOLD = 0.8  # arbitrary threshold
         self.KEYDOWN_CANDIDATE_THRESHOLD = 3  # max #finger to count keydown
 
         # detection results
@@ -51,7 +50,7 @@ class Hands:
         
     # interpret and store hand landmark detection result
     # may add more processing here
-    def process_results(self, detection_result, timestamp):
+    def process_results(self, detection_result, timestamp, keyboard):
         # no hand present
         if detection_result == None:
             self.hand_landmarks_list = None
@@ -63,13 +62,13 @@ class Hands:
             self.handedness_list = detection_result.handedness
 
         # update finger position
-        self.update_finger()
+        # self.update_finger_old()
         
-        # update keydown keyup
-        # self.update_keystroke()
+        # update finger
+        self.update_finger(keyboard)
         # print("result stored in hands")
     
-    def update_finger(self):
+    def update_finger_old(self):
         # mark fingers on screen
         on_screen = []
         index_displacement = {"Left" : 0, "Right" : 5}
@@ -87,73 +86,55 @@ class Hands:
             if finger_id not in on_screen:
                 self.fingers[finger_id].update_absent()
 
-    # TODO: update to use finger class
-    def update_keystroke(self):
+    def update_finger(self, keyboard):
         index_displacement = {"Left": 0, "Right": 5}
-        # update each finger state
+        
+        # to identify which fingers absent
+        on_screen_fingers = []
+        
+        # for each hand on screen
         for hand_id, handedness in enumerate(self.handedness_list):
             start_id = index_displacement[handedness[0].category_name]
 
             # if <= 3 keydown, only down the one with greatest dist
             keydown_candidate = []
-
+            
+            # for each finger in hand
             for idx in range(0, 5):
                 finger = start_id + idx
+                on_screen_fingers.append(finger)
+                
+                # retrieve landmark
                 landmark_id = 4 * (idx + 1)
-                landmark = self.world_landmarks_list[hand_id][landmark_id]
+                wlandmark = self.world_landmarks_list[hand_id][landmark_id]
+                nlandmark = self.hand_landmarks_list[hand_id][landmark_id]
 
-                # non existent originally
-                if self.finger_state[finger] == -1:
-                    self.finger_state[finger] = 0
-                    self.finger_tip_pos[finger] = landmark.z * 100
-                    continue
-
-                cur_z = landmark.z * 100
-                prev_z = self.finger_tip_pos[finger]
-
-                # key down originally
-                if self.finger_state[finger] == 1:
-                    # keyup motion detected
-                    if (
-                        abs(cur_z - prev_z) > self.KEYDOWN_DISTANCE_THRESHOLD
-                        and cur_z > prev_z
-                    ):
-                        self.finger_state[finger] = 0
-                        self.finger_tip_pos[finger] = cur_z
-                    # mark lowest point in key press
-                    else:
-                        self.finger_tip_pos[finger] = min(
-                            self.finger_tip_pos[finger], cur_z
-                        )
-
-                # key up originally
-                elif self.finger_state[finger] == 0:
-                    if (
-                        abs(cur_z - prev_z) > self.KEYDOWN_DISTANCE_THRESHOLD
-                        and cur_z < prev_z
-                    ):
-                        keydown_candidate.append((finger, abs(cur_z - prev_z)))
-                        # self.finger_state[finger] = 1
-                        self.finger_tip_pos[finger] = cur_z
-
-                    # down-ing, don't update tip position (cater slow keydown)
-                    elif (
-                        cur_z < prev_z
-                        and abs(cur_z - prev_z) > self.KEYDOWN_DISTANCE_THRESHOLD / 2
-                    ):
-                        continue
-                    else:
-                        self.finger_tip_pos[finger] = cur_z
+                # print(f"updating finger {self.fingers[finger].name}")
+                keydown, displacement = self.fingers[finger].update_present(wlandmark, nlandmark, keyboard)
+                
+                if keydown:
+                    # print("keydown candidate add")
+                    keydown_candidate.append((finger, displacement))
 
             # exist keydown candidate & not whole hand move
-            # add rule: need keydown on same key to hold
-            # add rule: consider only if lay in keyboard
             if (
                 keydown_candidate
                 and len(keydown_candidate) <= self.KEYDOWN_CANDIDATE_THRESHOLD
             ):
-                keydown_finger = min(keydown_candidate, key=lambda x: x[1])[0]
-                self.finger_state[keydown_finger] = 1
+                # print("exist keydown candidate")
+                keydown_finger_id = min(keydown_candidate, key=lambda x: x[1])[0]
+                # print(f"keydown by {keydown_finger_id}")
+                
+                # TODO: finger set keydown
+                keyname = self.fingers[keydown_finger_id].set_keydown()
+                # print(f"{keyname} pressed by {keydown_finger_id}")
+                
+                # TODO: update keyboard
+        
+        # update for all absent fingers     
+        for finger_id in range(10):
+            if finger_id not in on_screen_fingers:
+                self.fingers[finger_id].update_absent()
 
     def draw_fingertips(self, img):
         annotated_img = np.copy(img)
@@ -168,7 +149,8 @@ class Hands:
             for finger in range(5):
                 finger_id = finger + finger_displacement[hand[0].category_name]
                 landmark_id = 4 * (finger + 1)
-                landmark = self.world_landmarks_list[hand_id][landmark_id]
+                # landmark = self.world_landmarks_list[hand_id][landmark_id]
+                landmark = self.hand_landmarks_list[hand_id][landmark_id]
 
                 x, y, z = landmark.x, landmark.y, landmark.z
                 text = f"{finger+1} ({self.fingers[finger_id].keydown}): x {x*100:.1f}; y {y*100:.1f}; z {z*100:.1f}"

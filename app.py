@@ -30,7 +30,7 @@ class App:
         # print("landmarker result activated")
         try:
             self.raw_img = output_image.numpy_view()
-            self.hands.process_results(result, timestamp_ms)
+            self.hands.process_results(result, timestamp_ms, self.keyboard)
 
         except Exception as e:
             print(e)

@@ -1,8 +1,13 @@
-# TODO:
-[] edit code to use finger class 
-[] check key position on screen related to landmark pos
+# Issue - Unstable z landmark
+- the z landmark (both world and local coor) are unstable and inaccurate
+- require the use of other more stable indicators (e.g. x, y) 
+
+# TODO
+- [ ] update check rules
+- [ ] check key position on screen related to landmark pos
 
 ## Current Rules for detecting keyup/keydown
+```
 if originally down:
     if cur_z raise from anchor by over threshold: 
         set keyup
@@ -25,12 +30,13 @@ if originally up:
     (maintaining up)
     else:
         anchor_pos = cur_z 
+```
 
-## TO ADD:
-[] if landmark out of keyboard range, set as keyup only
-[] only recognize keydown when finger stays on same key
+## TO ADD
+- [ ] if landmark out of keyboard range, set as keyup only
+- [ ] only recognize keydown when finger stays on same key
 
-## MAY ADD IF WANT:
-[] different threshold for different fingers
-[] calibration at start to log threshold for each finger
-[] include x, y in movement detection (e.g. calc distance moved)
+## MAY ADD IF WANT
+- [ ] different threshold for different fingers
+- [ ] calibration at start to log threshold for each finger
+- [ ] include x, y in movement detection (e.g. calc distance moved)

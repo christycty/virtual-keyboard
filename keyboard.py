@@ -22,9 +22,34 @@ class Keyboard:
         self.fontscale = 1.2
 
         self.letters = [list("QWERTYUIOP"), list("ASDFGHJKL"), list("ZXCVBNM")]
+        
+        # letter2id, id2letters
+        
         # consider add each key letter and position
+        self.letter_pos = {}
 
+    # return which key (x, y) lies on
+    def query_key_id(self, x_norm, y_norm):        
+        x = int(x_norm * 1280)
+        y = int(y_norm * 720)
+        
+        # print(f"query key id of {x} {y}")
+        
+        for key, pos in self.letter_pos.items():
+            # print(f"checking {key} {pos}")
+            if pos[0] <= x and x <= pos[0] + self.keysize \
+                and pos[1] <= y and y <= pos[1] + self.keysize:
+                    # print(f"key name of {x}, {y} is {key}")
+                    return key
+        
+        # print("no key is at query coordinates")
+        return -1
+        
+        
     def draw_key(self, img, text, topx, topy):
+        # mark letter key position
+        self.letter_pos[text] = (topx, topy)
+        
         # draw semi-transparent key
         img_key = img[topy : topy + self.keysize, topx : topx + self.keysize]
 
